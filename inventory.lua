@@ -7,6 +7,7 @@ local uis = g:GetService("UserInputService")
 local reps = g:GetService("ReplicatedStorage")
 local runs = g:GetService("RunService")
 local plrs = g:GetService("Players")
+local core = g:GetService("CoreGui")
 local https = g:GetService("HttpService")
 local tween = g:GetService("TweenService")
 
@@ -22,7 +23,6 @@ local module = {}
 module.__index = module
 
 local plr = plrs.LocalPlayer
-local plrui : PlayerGui = plr:WaitForChild("PlayerGui" , math.huge)
 
 function module.new()
 	local screen : ScreenGui = ins("ScreenGui" , {
@@ -34,7 +34,7 @@ function module.new()
 		["IgnoreGuiInset"] = false,
 		["Localize"] = true,
 		["Name"] = https:GenerateGUID( false ),
-		["Parent"] = plrui,
+		["Parent"] = core,
 		["ResetOnSpawn"] = false,
 		["SafeAreaCompatibility"] = Enum.SafeAreaCompatibility.FullscreenExtension,
 		["ScreenInsets"] = Enum.ScreenInsets.CoreUISafeInsets,
