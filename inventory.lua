@@ -202,7 +202,7 @@ function module:createImage()
 		for _ , va in bg:GetChildren() do
 			if va:IsA("ImageButton") then
 				if not config[va.Name] then
-					va:Destroy()
+					--va:Destroy()
 				end
 			end
 		end
