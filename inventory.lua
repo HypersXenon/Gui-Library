@@ -185,6 +185,7 @@ function module:createImage()
 					["Size"] = UDim2.fromOffset(25, 25),
 					["Image"] = id,
 					["Parent"] = bg,
+					["Name"] = name
 				})
 				icon.MouseEnter:Connect(function()
 					tween:Create( icon , TweenInfo.new( .1 , Enum.EasingStyle.Sine ) , {
@@ -202,7 +203,7 @@ function module:createImage()
 		for _ , va in bg:GetChildren() do
 			if va:IsA("ImageButton") then
 				if not config[va.Name] then
-					--va:Destroy()
+					va:Destroy()
 				end
 			end
 		end
