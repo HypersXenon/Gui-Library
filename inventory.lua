@@ -175,7 +175,6 @@ function module:createImage()
 	local method = {}
 	function method:update( config : { name : number | string })
 		for name , id in config do
-			warn( name )
 			local icon : ImageButton = bg:FindFirstChild(name)
 			local id : string = `rbxassetid://{ string.gsub( id , "%D" , "" ) }`
 			
