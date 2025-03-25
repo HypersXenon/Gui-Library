@@ -220,6 +220,21 @@ do ---<< settings >>---
 	end
 end
 
+task.defer(function() ---<< remove tree >>---
+	ws:WaitForChild("SpawnerZones" , math.huge)
+	ws.SpawnerZones:WaitForChild("Foliage" , math.huge)
+
+	local folder : Folder = ws.SpawnerZones.Foliage
+	while true do
+		for _ , va in folder:GetDescendants() do
+			if va:IsA("BasePart") then
+				if not va.CanCollide then va:Destroy() end
+			end
+		end
+		task.wait(1)
+	end
+end)
+
 uis.InputBegan:Connect(function( input , x )
 	if x then return end
 	if input.KeyCode == Enum.KeyCode.C then
@@ -388,7 +403,30 @@ end
 function getClosestCharacter( isPlayer , isAi )
 	local character : Model , distance : number = nil , options.fov.radius
 	local originPos = Vector2.new( uis:GetMouseLocation().X , uis:GetMouseLocation().Y )
+	
+	if isAi then
+		if ws:FindFirstChild("AiZones") then
+			for _ , zone : Folder in ws.AiZones:GetChildren() do
+				for _ , char in zone:GetChildren() do
+					local humroot = char:FindFirstChild("HumanoidRootPart")
+					local head = char:FindFirstChild("Head")
+					if not humroot then continue end
+					if not head then continue end
 
+					local pos , onScreen = cam:WorldToViewportPoint( humroot.Position )
+					pos = Vector2.new( math.round( pos.X ) , math.round( pos.Y ) )
+					if onScreen then
+						local dist = ( pos - originPos ).Magnitude
+						if dist < distance then
+							distance = dist
+							character = char
+						end
+					end
+				end
+			end
+		end
+	end
+	
 	if isPlayer then
 		for _ , player in plrs:GetPlayers() do
 			if table.find( options.whitelist , player.Name ) then continue end
