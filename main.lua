@@ -282,7 +282,7 @@ runs.RenderStepped:Connect(function()
 			local humroot : BasePart = character:FindFirstChild("HumanoidRootPart")
 			local data = reps.Players:FindFirstChild( character.Name )
 
-			win2:setText( `{character.Name} ( HP {math.round( hum.Health / hum.MaxHealth ) * 100}% ) ( { math.round( plr:DistanceFromCharacter( humroot.Position ) ) }m )` )
+			win2:setText( `{character.Name} ( HP {math.round( ( hum.Health / hum.MaxHealth ) * 100 ) }% ) ( { math.round( plr:DistanceFromCharacter( humroot.Position ) ) }m )` )
 			for name , method in methods do
 				local icons = {}
 
