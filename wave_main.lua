@@ -10,6 +10,7 @@ local plrs = g:GetService("Players")
 local core = g:GetService("CoreGui")
 local tween = g:GetService("TweenService")
 local https = g:GetService("HttpService")
+local light = g:GetService("Lighting")
 
 local plr = plrs.LocalPlayer
 local cam = ws.Camera
@@ -18,6 +19,8 @@ local terrain = ws.Terrain
 
 local lib =loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local lib2 = loadstring(game:HttpGet("https://raw.githubusercontent.com/HypersXenon/Gui-Library/refs/heads/main/inventory.lua"))()
+local lib3 = loadstring(game:HttpGet("https://raw.githubusercontent.com/HypersXenon/Gui-Library/refs/heads/main/freecam.lua"))()
+
 local bullet = require(reps.Modules.FPS.Bullet).CreateBullet
 local screenGui = Instance.new("ScreenGui" , core) ; screenGui.ResetOnSpawn = false ; screenGui.IgnoreGuiInset = true
 
@@ -43,10 +46,13 @@ local options = {
 		};
 	};
 	whitelist = {};
-	keybind = Enum.KeyCode.RightControl
+	keybind = Enum.KeyCode.RightControl;
+	inventoryScale = Enum.KeyCode.I;
+	freeCam = Enum.KeyCode.RightAlt;
 }
 local cache = {
-	esp = {}
+	esp = {};
+	removed_grass = {};
 }
 
 
@@ -74,6 +80,7 @@ local win = lib:CreateWindow({
 	MinimizeKey = options.keybind
 })
 local win2 = lib2.new()
+local freecam = lib3.new()
 
 local tabs = {
 	main = win:AddTab({ Title = "Main", Icon = "home" }),
@@ -84,6 +91,11 @@ local methods = {
 	["Clothing"] = win2:createImage();
 	["Inventory"] = win2:createImage();
 }
+
+do ---<< Fulbright >>---
+	light.Brightness = 10
+	light.Ambient = Color3.fromRGB(255, 255, 255)
+end
 
 do ---<< main >>---
 	local tab = tabs.main
@@ -164,8 +176,8 @@ do ---<< main >>---
 		plrs.PlayerRemoving:Connect(update)
 	end
 
-	do ---<< Mic >>---
-		tab:AddSection("Mic")
+	do ---<< Mics >>---
+		tab:AddSection("Mics")
 		tab:AddButton({
 			Title = "Remove Glass",
 			Description = "your game has lag 1-5s.",
@@ -197,6 +209,27 @@ do ---<< main >>---
 						Duration = 5
 					})
 				end
+			end
+		})
+		
+		tab:AddKeybind("Keybind", {
+			Title = "Inventory Scale",
+			Mode = "Toggle",
+			Default = options.inventoryScale.Name,
+
+			Callback = function( va )
+				local screen = win2.screen
+				local bg : Frame = screen.bg
+				local scale = bg:FindFirstChildOfClass("UIScale") or Instance.new("UIScale" , bg)
+				scale.Scale = va and 2 or 1
+			end
+		})
+		tab:AddKeybind("Keybind", {
+			Title = "Free Cam",
+			Mode = "Toggle",
+			Default = options.freeCam.Name,
+			Callback = function( va )
+				freecam:toggle( va )
 			end
 		})
 	end
@@ -337,72 +370,72 @@ runs.RenderStepped:Connect(function()
 	esp()
 end)
 
-function espUpdate( char : Model )
-	if not char then return end
-	local humroot = char:FindFirstChild("HumanoidRootPart")
-	local hum = char:FindFirstChild("Humanoid")
-	if not humroot then return end
-	if not hum then return end
-
-	local pos , onScreen = worldToViewportPoint( humroot.Position )
-
-	cache.esp[ char ] = cache.esp[ char ] or {}
-	local data = cache.esp[ char ]
-
-	local distance = plr:DistanceFromCharacter( humroot.Position )
-	
-	local str = `{ char.Name } | { math.round( distance ) }`	
-	
-	local text : TextLabel = data.text or Instance.new("TextLabel" , screenGui)
-	text.Size = UDim2.fromScale(0, 0)
-	text.TextXAlignment = Enum.TextXAlignment.Center
-	text.Position = UDim2.fromOffset( pos.X , pos.Y )
-	text.BackgroundTransparency = 1
-	text.TextScaled = false
-	text.TextSize = 13
-	text.Text = str
-	text.TextColor3 = Color3.fromRGB(255 , 255 , 255)
-	text.FontFace = Font.new( "rbxasset://fonts/families/HighwayGothic.json" , Enum.FontWeight.Bold , Enum.FontStyle.Normal )
-	text.TextStrokeTransparency = .5
-	text.TextTransparency = onScreen and 0 or 1
-	
-	local box : Frame = data.box or Instance.new("Frame" , screenGui)
-	box.Transparency = 1
-
-	local uiStroke = box:FindFirstChildOfClass("UIStroke") or Instance.new("UIStroke" , box)
-	uiStroke.Color = Color3.fromRGB(255 , 255 , 255)
-	uiStroke.Enabled = onScreen
-
-	local cf , si = char:GetBoundingBox()
-	do
-		local top = worldToViewportPoint( ( cf * CFrame.new( 0 , si.Y / 2 , 0 ) ).Position )
-		local bottom = worldToViewportPoint( ( cf * CFrame.new( 0 , -si.Y / 2 , 0 ) ).Position )
-		local left = worldToViewportPoint( ( cf * CFrame.new( -si.X / 2 , 0 , 0 ) ).Position )
-		local right = worldToViewportPoint( ( cf * CFrame.new( si.X / 2 , 0 , 0 ) ).Position )
-
-		local hight = math.abs( ( top - bottom ).Magnitude )
-		local width = math.abs( ( left - right ).Magnitude )
-		
-		local pos = pos + Vector2.new( -width / 2 , -hight / 2 )
-		
-		box.Size = UDim2.fromOffset(width , hight)
-		box.Position = UDim2.fromOffset( pos.X , pos.Y )
-	end
-
-	data.text = text
-	data.box = box
-end
-
 function esp()
+	local function update( char : Model )
+		if not char then return end
+		local humroot = char:FindFirstChild("HumanoidRootPart")
+		local hum = char:FindFirstChild("Humanoid")
+		if not humroot then return end
+		if not hum then return end
+
+		local pos , onScreen = worldToViewportPoint( humroot.Position )
+
+		cache.esp[ char ] = cache.esp[ char ] or {}
+		local data = cache.esp[ char ]
+
+		local distance = plr:DistanceFromCharacter( humroot.Position )
+
+		local str = `{ char.Name } | { math.round( distance ) }`	
+
+		local text : TextLabel = data.text or Instance.new("TextLabel" , screenGui)
+		text.Size = UDim2.fromScale(0, 0)
+		text.TextXAlignment = Enum.TextXAlignment.Center
+		text.Position = UDim2.fromOffset( pos.X , pos.Y )
+		text.BackgroundTransparency = 1
+		text.TextScaled = false
+		text.TextSize = 13
+		text.Text = str
+		text.TextColor3 = Color3.fromRGB(255 , 255 , 255)
+		text.FontFace = Font.new( "rbxasset://fonts/families/HighwayGothic.json" , Enum.FontWeight.Bold , Enum.FontStyle.Normal )
+		text.TextStrokeTransparency = .5
+		text.TextTransparency = onScreen and 0 or 1
+
+		local box : Frame = data.box or Instance.new("Frame" , screenGui)
+		box.Transparency = 1
+
+		local uiStroke = box:FindFirstChildOfClass("UIStroke") or Instance.new("UIStroke" , box)
+		uiStroke.Color = Color3.fromRGB(255 , 255 , 255)
+		uiStroke.Enabled = onScreen
+
+		local cf , si = char:GetBoundingBox()
+		do
+			local top = worldToViewportPoint( ( cf * CFrame.new( 0 , si.Y / 2 , 0 ) ).Position )
+			local bottom = worldToViewportPoint( ( cf * CFrame.new( 0 , -si.Y / 2 , 0 ) ).Position )
+			local left = worldToViewportPoint( ( cf * CFrame.new( -si.X / 2 , 0 , 0 ) ).Position )
+			local right = worldToViewportPoint( ( cf * CFrame.new( si.X / 2 , 0 , 0 ) ).Position )
+
+			local hight = math.abs( ( top - bottom ).Magnitude )
+			local width = math.abs( ( left - right ).Magnitude )
+
+			local pos = pos + Vector2.new( -width / 2 , -hight / 2 )
+
+			box.Size = UDim2.fromOffset(width , hight)
+			box.Position = UDim2.fromOffset( pos.X , pos.Y )
+		end
+
+		data.text = text
+		data.box = box
+	end
+	
 	for _ , player in plrs:GetPlayers() do
 		if player == plr then continue end
-		espUpdate( player.Character )
+		update( player.Character )
 	end
 
 	if ws:FindFirstChild("AiZones") then
 		for _ , zone : Folder in ws.AiZones:GetChildren() do
 			for _ , char in zone:GetChildren() do
-				espUpdate( char )
+				update( char )
 			end
 		end
 	end
@@ -499,7 +532,6 @@ function getClosestCharacter( isPlayer , isAi )
 end
 
 do
-	local v0 = {};
 	local l_VFX_0 = require(game.ReplicatedStorage.Modules:WaitForChild("VFX"));
 	local l_UniversalTables_0 = require(game.ReplicatedStorage.Modules:WaitForChild("UniversalTables"));
 	local l_FunctionLibraryExtension_0 = require(game.ReplicatedStorage.Modules:WaitForChild("FunctionLibraryExtension"));
